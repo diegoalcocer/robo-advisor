@@ -5,7 +5,7 @@ Amazon Lex bot that will recommend an investment portfolio for a retirement plan
 
 ## Summary
 
-This project is an Amazon Lex Bot that uses Amazan Lambda Functions. Machine learning and NLP are disrupting finance to improve the customer experience, users will be able to use this robo advisor to get investment portfolio recommendations for retirement. 
+This project is an AWS Lex Bot that uses AWS Lambda Functions. With the use of machine learning and NLP, which are disrupting finance to improve the customer experience, users will be able to use this robo advisor to get investment portfolio recommendations for retirement. 
 
 ---
 ## Installation and Usage
