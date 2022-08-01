@@ -11,7 +11,15 @@ def parse_int(n):
         return int(n)
     except ValueError:
         return float("nan")
-
+        
+def parse_float(n):
+    """
+    Securely converts a non-numeric value to float.
+    """
+    try:
+        return float(n)
+    except ValueError:
+        return float("nan")
 
 def build_validation_result(is_valid, violated_slot, message_content):
     """
@@ -26,6 +34,41 @@ def build_validation_result(is_valid, violated_slot, message_content):
         "message": {"contentType": "PlainText", "content": message_content},
     }
 
+def validate_data(age, investment_amount, intent_request):
+    """
+    Validates the data provided by the user.
+        * The `age` should be greater than zero and less than 65.
+        * The `investment_amount` should be equal to or greater than 5000.
+    """
+
+    # Validate that the `age` should be greater than zero and less than 65
+    if age is not None:
+        age = parse_int(
+            age
+        )  # Since parameters are strings it's important to cast values
+        if age <= 0 or age>=65:
+            return build_validation_result(
+                False,
+                "age",
+                "The `age` should be greater than zero and less than 65, "
+                "please provide a different age.",
+            )
+
+    # Validate the investment_amount should be equal to or greater than 5000
+    if investment_amount is not None:
+        investment_amount = parse_float(
+            investment_amount
+        )  # Since parameters are strings it's important to cast values
+        if investment_amount < 5000:
+            return build_validation_result(
+                False,
+                "investmentAmount",
+                "The investment amount should be greater than 5000, "
+                "please provide a correct investment amount.",
+            )
+
+    # A True results is returned if age or amount are valid
+    return build_validation_result(True, None, None)
 
 ### Dialog Actions Helper Functions ###
 def get_slots(intent_request):
@@ -111,7 +154,6 @@ In this section, you will create an Amazon Lambda function that will validate th
 
 """
 
-
 ### Intents Handlers ###
 def recommend_portfolio(intent_request):
     """
@@ -122,9 +164,72 @@ def recommend_portfolio(intent_request):
     age = get_slots(intent_request)["age"]
     investment_amount = get_slots(intent_request)["investmentAmount"]
     risk_level = get_slots(intent_request)["riskLevel"]
+    
+    # Gets the invocation source, for Lex dialogs "DialogCodeHook" is expected.
     source = intent_request["invocationSource"]
+    
+    if source == "DialogCodeHook":
+        # This code performs basic validation on the supplied input slots.
 
-    # YOUR CODE GOES HERE!
+        # Gets all the slots
+        slots = get_slots(intent_request)
+
+        # Validates user's input using the validate_data function
+        validation_result = validate_data(age, investment_amount, intent_request)
+
+        # If the data provided by the user is not valid,
+        # the elicitSlot dialog action is used to re-prompt for the first violation detected.
+        if not validation_result["isValid"]:
+            slots[validation_result["violatedSlot"]] = None  # Cleans invalid slot
+
+            # Returns an elicitSlot dialog to request new data for the invalid slot
+            return elicit_slot(
+                intent_request["sessionAttributes"],
+                intent_request["currentIntent"]["name"],
+                slots,
+                validation_result["violatedSlot"],
+                validation_result["message"],
+            )
+
+        # Fetch current session attributes
+        output_session_attributes = intent_request["sessionAttributes"]
+
+        # Once all slots are valid, a delegate dialog is returned to Lex to choose the next course of action.
+        return delegate(output_session_attributes, get_slots(intent_request))
+
+    # Get the recommendation.
+    recommendation = getRecommendation(risk_level)
+
+    # Return a message with conversion's result.
+    return close(
+        intent_request["sessionAttributes"],
+        "Fulfilled",
+        {
+            "contentType": "PlainText",
+            "content": """{} after analyzing the information you gave us, you could do the following:
+            {}.
+            """.format(
+                first_name, recommendation
+            ),
+        },
+    )
+
+def getRecommendation(risk_level):
+    """
+    Depending of the risk level, return a strategy recommendation
+    """
+    
+    if risk_level.lower() == "none":
+        return "100% bonds (AGG), 0% equities (SPY)"
+    elif risk_level.lower() == "low":
+        return "60% bonds (AGG), 40% equities (SPY)"
+    elif risk_level.lower() == "medium":
+        return "40% bonds (AGG), 60% equities (SPY)"
+    elif risk_level.lower() == "high":
+        return "20% bonds (AGG), 80% equities (SPY)"
+    else:
+        return "I'm not sure :("
+    
 
 
 ### Intents Dispatcher ###
