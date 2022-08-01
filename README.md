@@ -24,7 +24,7 @@ To test the robo advisor and the lambda function `lambda_function.py` you need t
 
 Robo advisor works by interacting with the user and providing portfolio recommendations
 
-* In the following video, robo-advisor doesn't have use am AWS Lambda function, and this was the result:
+* In the following video, robo-advisor doesn't use AWS Lambda function, and this was the result:
   
     ![](img/firstRoboAdvisor.gif)
 
